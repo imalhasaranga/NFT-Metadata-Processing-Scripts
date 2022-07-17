@@ -99,6 +99,9 @@ def hash_file(filename):
 def hash_str(strx):
     return hashlib.md5(strx.encode("utf-8")).hexdigest()
 
+def private_KMOrder(attributes) :
+    return sorted(attributes, key=lambda d: d['trait_type'])
+
 def rootToHashMap():
     all_data = {}
     for file in glob.glob(root+"/*"):
@@ -106,20 +109,18 @@ def rootToHashMap():
             jsons = file+"/metadata"
             for file_2 in glob.glob(jsons+"/*.json"):
                 json_ob = json.load(open(file_2))
-                key = str(hash_str(json.dumps(json_ob["attributes"])))
+                key = str(hash_str(json.dumps(private_KMOrder(json_ob["attributes"]))))
                 value = hash_file(os.path.splitext(file+"/"+os.path.basename(file_2))[0]+"."+extension)
                 all_data[str(key)] = value
-                # if key == "1383fb422d720c535c617c41b20c35dd":
-                #     print(key+" => "+value+" =>"+(os.path.splitext(file+"/"+os.path.basename(file_2))[0]+"."+extension))
     return all_data
-
 
 def destCSVJsonToHashMap():
     all_data = {}
     for json_ob in json.load(open(dest+"/csv_metadata/metadata.json")):
-        key = str(hash_str(json.dumps(json_ob["attributes"])))
+        key = str(hash_str(json.dumps(private_KMOrder(json_ob["attributes"]))))
         value = hash_file(dest+"/"+json_ob["tokenId"]+"."+extension)
         all_data[str(key)] = value
+        
     return all_data
 
 def destToHashMap():
@@ -127,11 +128,9 @@ def destToHashMap():
     jsons = dest+"/metadata"
     for file_2 in glob.glob(jsons+"/*.json"):
         json_ob = json.load(open(file_2))
-        key = str(hash_str(json.dumps(json_ob["attributes"])))
+        key = str(hash_str(private_KMOrder(json.dumps(json_ob["attributes"]))))
         value = hash_file(os.path.splitext(dest+"/"+os.path.basename(file_2))[0]+"."+extension)
         all_data[str(key)] = value
-        # if key == "1383fb422d720c535c617c41b20c35dd":
-        #     print(key+" => "+value+" =>"+(os.path.splitext(dest+"/"+os.path.basename(file_2))[0]+"."+extension))
     return all_data
 
 
