@@ -9,9 +9,10 @@ import hashlib
 import time
 import shutil
 import random
+import hashlib # hashlib module
 
-root = "./Parent"
-dest = "./dest2"
+root = "./parent"
+dest = "./destination"
 
 
 collection_name = "TWNFT"
@@ -30,7 +31,7 @@ def create_csv():
 
     if not os.path.exists(dest+"/csv_metadata"):
         os.makedirs(dest+"/csv_metadata")
-    with open(dest+"/csv_metadata/metadata.csv", 'w', encoding='UTF8') as f:
+    with open(dest+"/csv_metadata/metadata.csv", 'w',newline="",encoding='UTF8') as f:
         writer = csv.writer(f)
         writer.writerow(headers)
         for file in sorted(glob.glob(dest+"/metadata/*.json"),  key=lambda x: float(re.findall("(\d+)", x)[0])):
@@ -86,14 +87,17 @@ def private_empty(path):
 
 
 def hash_file(filename):
-    h = hashlib.sha1()
-    with open(filename, 'rb') as file:
-        chunk = 0
-        while chunk != b'':
-            chunk = file.read(1024)
-            h.update(chunk)
-    return h.hexdigest()
+    # h = hashlib.sha1()
+    # with open(filename, 'rb') as file:
+    #     chunk = 0
+    #     while chunk != b'':
+    #         chunk = file.read(1024)
+    #         h.update(chunk)
+    # return h.hexdigest()
+    return str(os.path.getsize(filename))
 
+def hash_str(strx):
+    return hashlib.md5(strx.encode("utf-8")).hexdigest()
 
 def rootToHashMap():
     all_data = {}
@@ -102,17 +106,18 @@ def rootToHashMap():
             jsons = file+"/metadata"
             for file_2 in glob.glob(jsons+"/*.json"):
                 json_ob = json.load(open(file_2))
-                key = str(hash(json.dumps(json_ob["attributes"])))
-                value = hash_file(os.path.splitext(
-                    file+"/"+os.path.basename(file_2))[0]+"."+extension)
+                key = str(hash_str(json.dumps(json_ob["attributes"])))
+                value = hash_file(os.path.splitext(file+"/"+os.path.basename(file_2))[0]+"."+extension)
                 all_data[str(key)] = value
+                # if key == "1383fb422d720c535c617c41b20c35dd":
+                #     print(key+" => "+value+" =>"+(os.path.splitext(file+"/"+os.path.basename(file_2))[0]+"."+extension))
     return all_data
 
 
 def destCSVJsonToHashMap():
     all_data = {}
     for json_ob in json.load(open(dest+"/csv_metadata/metadata.json")):
-        key = str(hash(json.dumps(json_ob["attributes"])))
+        key = str(hash_str(json.dumps(json_ob["attributes"])))
         value = hash_file(dest+"/"+json_ob["tokenId"]+"."+extension)
         all_data[str(key)] = value
     return all_data
@@ -122,10 +127,11 @@ def destToHashMap():
     jsons = dest+"/metadata"
     for file_2 in glob.glob(jsons+"/*.json"):
         json_ob = json.load(open(file_2))
-        key = str(hash(json.dumps(json_ob["attributes"])))
-        value = hash_file(os.path.splitext(
-            dest+"/"+os.path.basename(file_2))[0]+"."+extension)
+        key = str(hash_str(json.dumps(json_ob["attributes"])))
+        value = hash_file(os.path.splitext(dest+"/"+os.path.basename(file_2))[0]+"."+extension)
         all_data[str(key)] = value
+        # if key == "1383fb422d720c535c617c41b20c35dd":
+        #     print(key+" => "+value+" =>"+(os.path.splitext(dest+"/"+os.path.basename(file_2))[0]+"."+extension))
     return all_data
 
 
@@ -142,7 +148,7 @@ def parent_validation():
                         sys.exit("Please Fix, Path not found: "+nft)
             else:
                 sys.exit("Path not found: "+jsons)
-    print("All Good!")
+    print("all Good!")
 
 def copy():
     private_empty(dest)
@@ -183,27 +189,54 @@ def randomize():
             json.dump(json_ob, f, indent=4)
         os.remove(file_2)
 
+def private_concat(list):
+    arr = []
+    for x,y in list.items():
+        arr.append(x+""+y)
+    return arr
 
 def all_good(normal = True):
     if normal:
-        if not rootToHashMap() == destToHashMap():
-            sys.exit(
-                "Validation Failed, Destiantion Collection not match with Root Collection")
+        rH = rootToHashMap()
+        with open("root.json", 'w+') as f:
+            json.dump(rH, f, indent=4)
+        dH = destToHashMap()
+        with open("dest.json", 'w+') as f:
+            json.dump(dH, f, indent=4)
+        if not rH == dH:
+            print("---------ERROR-----------")
+            print("Diff "+str(len(set(private_concat(rH)) ^ set(private_concat(dH)))/2))
+            sys.exit("Validation Failed, Destiantion Collection not match with Root Collection")
         else:
             print("Yup, All good")
     else:
         print("Checking final set")
-        if not rootToHashMap() == destCSVJsonToHashMap():
-            sys.exit(
-                "Validation Failed, Destiantion Collection not match with Root Collection")
+        rH = rootToHashMap()
+        with open("root.json", 'w+') as f:
+            json.dump(rH, f, indent=4)
+        dCH = destCSVJsonToHashMap()
+        with open("dest_CSV_json.json", 'w+') as f:
+            json.dump(dCH, f, indent=4)
+        if not rH == dCH:
+            print("---------ERROR-----------")
+            print("Diff "+str(len(set(private_concat(rH)) ^ set(private_concat(dCH)))/2))
+            sys.exit("Validation Failed, Destiantion Collection not match with Root Collection")
         else:
             print("Yup, All good")
 
+
+
 parent_validation()
 copy()
+print("validation started")
 all_good()
+print("randomization started")
 randomize()
+print("validation started after randomization")
 all_good()
+print("creating csv")
 create_csv()
+print("csv to metadata")
 csv_to_metadata()
+print("matadata json against destination validation started")
 all_good(False)
