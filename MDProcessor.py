@@ -11,9 +11,10 @@ import shutil
 import random
 import hashlib
 from pathlib import Path
+import zipfile
 
-root = "./parent"
-dest = "./destination"
+root = "./Parent"
+dest = "./dest2"
 metadata_folder = "metadata"
 csv_folder = "csv_metadata"
 dest_CSV = "metadata.csv"
@@ -29,7 +30,7 @@ def create_csv():
     for p in pre_defined:
         headers.append(p)
     for file in glob.glob(dest+"/"+metadata_folder+"/*.json"):
-        json_ob = json.load(open(file))
+        json_ob = json.load(open(file,encoding='utf-8-sig'))
         for i in json_ob["attributes"]:
             headers.append(i["trait_type"])
     headers = list(dict.fromkeys(headers))
@@ -41,7 +42,7 @@ def create_csv():
         writer.writerow(headers)
         for file in sorted(glob.glob(dest+"/"+metadata_folder+"/*.json"),  key=lambda x: float(re.findall("(\d+)", x)[0])):
             row = [""] * len(headers)
-            json1 = json.load(open(file))
+            json1 = json.load(open(file,encoding='utf-8-sig'))
             row[headers.index("tokenId")] = int(json1["tokenId"])
             row[headers.index("name")] = collection_name + " #"+str(json1["tokenId"])
             row[headers.index("description")] = ""
@@ -125,7 +126,7 @@ def rootToHashMap():
 
 def destCSVJsonToHashMap():
     all_data = {}
-    for json_ob in json.load(open(dest+"/"+csv_folder+"/metadata.json")):
+    for json_ob in json.load(open(dest+"/"+csv_folder+"/metadata.json",encoding='utf-8-sig')):
         key = str(hash_str(json.dumps(private_KMOrder(json_ob["attributes"]))))
         value = hash_file(dest+"/"+json_ob["tokenId"]+"."+extension)
         all_data[str(key)] = value
@@ -135,7 +136,7 @@ def destToHashMap():
     all_data = {}
     jsons = dest+"/"+metadata_folder
     for file_2 in glob.glob(jsons+"/*.json"):
-        json_ob = json.load(open(file_2))
+        json_ob = json.load(open(file_2, encoding='utf-8-sig'))
         key = str(hash_str(json.dumps(private_KMOrder(json_ob["attributes"]))))
         value = hash_file(os.path.splitext(dest+"/"+os.path.basename(file_2))[0]+"."+extension)
         all_data[str(key)] = value
@@ -187,7 +188,7 @@ def randomize():
         arr.append(i)
     random.shuffle(arr)
     for file_2 in glob.glob(dest+"/"+metadata_folder+"/*.json"):
-        json_ob = json.load(open(file_2))
+        json_ob = json.load(open(file_2,encoding='utf-8-sig'))
         uid = arr.pop()
         nft = dest+"/"+str(json_ob["tokenId"])+"."+extension
         new_name = dest+"/"+str(uid)+"."+extension
@@ -218,6 +219,25 @@ def is_all_good(normal = True):
             print("Diff "+str(len(set(private_concat(rH)) ^ set(private_concat(dCH)))/2))
             sys.exit("Validation Failed, Destiantion Collection not match with Root Collection")
     print("Yup, All good")
+
+def make_zip(chunk_count):
+    arr = []
+    for f in sorted(glob.glob(dest+"/*."+extension)):
+        arr.append(f)
+    chunks = private_divide_chunks(arr,chunk_count)
+    for files in chunks:
+        name = Path(files[0]).stem+"-"+Path(files[len(files)-1]).stem
+        with zipfile.ZipFile(dest+"/"+name+".zip", 'w',zipfile.ZIP_DEFLATED) as zipMe:        
+            for file in files:
+                zipMe.write(file,arcname= "./"+name+"/"+os.path.basename(file))
+        zipMe.close()
+        for f1 in files:
+            os.remove(f1)
+    print("Done Making Zip")
+    
+def private_divide_chunks(l, n):
+	for i in range(0, len(l), n):
+		yield l[i:i + n]
 
 def private_empty(path):
     shutil.rmtree(path)
@@ -250,3 +270,6 @@ print("Creating CSV from Collection")
 create_csv()
 print("CSV to Metadata Json") #do this after editing the original CSV
 csv_to_metadata(dest+"/"+csv_folder+"/metadata-1.csv")
+
+
+make_zip(3)
