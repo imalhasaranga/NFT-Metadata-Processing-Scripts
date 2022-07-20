@@ -77,7 +77,7 @@ def private_make_attriubte_array(headers, row):
             if row[headers.index(h)].strip():
                 attr = {}
                 attr["trait_type"] = h
-                attr["value"] = row[headers.index(h)]
+                attr["value"] = private_strip(row[headers.index(h)])
                 arr.append(attr)
     return arr
 
@@ -91,7 +91,7 @@ def csv_to_metadata(path):
         for row in csvreader:
             map = {}
             for p in pre_defined:
-               map[p] = row[headers.index(p)]
+               map[p] = private_strip(row[headers.index(p)])
             map["attributes"] = private_make_attriubte_array(headers,row)
             attr_hash.append(hash_str(json.dumps(private_KMOrder(map["attributes"]))))
             jsons.append(map)
@@ -222,11 +222,12 @@ def is_all_good(normal = True):
 
 def make_zip(chunk_count):
     arr = []
-    for f in sorted(glob.glob(dest+"/*."+extension)):
+    for f in sorted(glob.glob(dest+"/*."+extension), key=lambda el: int(Path(el).stem)):
         arr.append(f)
     chunks = private_divide_chunks(arr,chunk_count)
     for files in chunks:
         name = Path(files[0]).stem+"-"+Path(files[len(files)-1]).stem
+        print("Creating... "+name+".zip")
         with zipfile.ZipFile(dest+"/"+name+".zip", 'w',zipfile.ZIP_DEFLATED) as zipMe:        
             for file in files:
                 zipMe.write(file,arcname= "./"+name+"/"+os.path.basename(file))
@@ -234,7 +235,12 @@ def make_zip(chunk_count):
         for f1 in files:
             os.remove(f1)
     print("Done Making Zip")
-    
+
+def private_strip(text):
+    if not text:
+        return ""
+    return text.strip() 
+
 def private_divide_chunks(l, n):
 	for i in range(0, len(l), n):
 		yield l[i:i + n]
@@ -256,20 +262,20 @@ def private_ob_file(json_path,ob):
     with open(json_path, 'w+',encoding='utf-8-sig') as f:
         json.dump(ob, f, indent=4, ensure_ascii=False)
 
-print("Script Started!")
-parent_validation()
-print("Coping to Destination")
-copy()
-print("Copy Validation Started")
-is_all_good()
-print("Randomization Started")
-randomize()
-print("Validation Started After Randomization")
-is_all_good()
-print("Creating CSV from Collection")
-create_csv()
-print("CSV to Metadata Json") #do this after editing the original CSV
-csv_to_metadata(dest+"/"+csv_folder+"/metadata-1.csv")
+# print("Script Started!")
+# parent_validation()
+# print("Coping to Destination")
+# copy()
+# print("Copy Validation Started")
+# is_all_good()
+# print("Randomization Started")
+# randomize()
+# print("Validation Started After Randomization")
+# is_all_good()
+# print("Creating CSV from Collection")
+# create_csv()
+# print("CSV to Metadata Json") #do this after editing the original CSV
+#csv_to_metadata(dest+"/"+csv_folder+"/final_metadata.csv")
 
-
-make_zip(3)
+#print("running script")
+#make_zip(500)
