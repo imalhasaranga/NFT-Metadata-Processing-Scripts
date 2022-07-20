@@ -83,6 +83,7 @@ def private_make_attriubte_array(headers, row):
 
 
 def csv_to_metadata(path):
+    private_create_folder_if_not(dest+"/"+csv_folder+"/metadata/")
     jsons = []
     attr_hash = []
     with open(path, 'r', encoding='utf-8-sig') as file:
@@ -92,12 +93,14 @@ def csv_to_metadata(path):
             map = {}
             for p in pre_defined:
                map[p] = private_strip(row[headers.index(p)])
+            map["tokenId"] = int(map["tokenId"])
             map["attributes"] = private_make_attriubte_array(headers,row)
             attr_hash.append(hash_str(json.dumps(private_KMOrder(map["attributes"]))))
+            private_ob_file(dest+"/"+csv_folder+"/metadata/"+str(map["tokenId"])+".json",map)
             jsons.append(map)
     if len(set([x for x in attr_hash if attr_hash.count(x) > 1])) > 0:
         sys.exit("ERROR - Two NFTS are Equal ")
-    private_ob_file(dest+"/"+csv_folder+"/metadata.json",jsons)
+    private_ob_file(dest+"/"+csv_folder+"/metadata/metadata.json",jsons)
 
 def hash_file(filename):
     # h = hashlib.sha1()
@@ -165,8 +168,7 @@ def parent_validation():
 
 def copy():
     private_empty(dest)
-    if not os.path.exists(dest+"/"+metadata_folder):
-        os.makedirs(dest+"/"+metadata_folder)
+    private_create_folder_if_not(dest+"/"+metadata_folder)
     for file in glob.glob(root+"/*"):
         if os.path.isdir(file):
             jsons = file+"/"+metadata_folder
@@ -262,20 +264,24 @@ def private_ob_file(json_path,ob):
     with open(json_path, 'w+',encoding='utf-8-sig') as f:
         json.dump(ob, f, indent=4, ensure_ascii=False)
 
-# print("Script Started!")
-# parent_validation()
-# print("Coping to Destination")
-# copy()
-# print("Copy Validation Started")
-# is_all_good()
-# print("Randomization Started")
-# randomize()
-# print("Validation Started After Randomization")
-# is_all_good()
-# print("Creating CSV from Collection")
-# create_csv()
-# print("CSV to Metadata Json") #do this after editing the original CSV
-#csv_to_metadata(dest+"/"+csv_folder+"/final_metadata.csv")
+def private_create_folder_if_not(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
-#print("running script")
-#make_zip(500)
+print("Script Started!")
+parent_validation()
+print("Coping to Destination")
+copy()
+print("Copy Validation Started")
+is_all_good()
+print("Randomization Started")
+randomize()
+print("Validation Started After Randomization")
+is_all_good()
+print("Creating CSV from Collection")
+create_csv()
+print("CSV to Metadata Json") #do this after editing the original CSV
+csv_to_metadata(dest+"/"+csv_folder+"/final_metadata_no_space.csv")
+print("Metadata Created")
+print("Now zipping collection for upload")
+make_zip(500)
