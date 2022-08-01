@@ -22,6 +22,7 @@ modified_CSV = ""
 
 collection_name = "TWNFT"
 extension = "gif"
+ipfs_url = "ipfs://<HASH>"
 
 pre_defined = ["tokenId","name","description","image","edition"]
 
@@ -144,6 +145,16 @@ def destToHashMap():
         value = hash_file(os.path.splitext(dest+"/"+os.path.basename(file_2))[0]+"."+extension)
         all_data[str(key)] = value
     return all_data
+
+def updateNFTPath():
+    jsons = []
+    for json_ob in json.load(open(dest+"/"+csv_folder+"/metadata/metadata.json",encoding='utf-8-sig')):
+        id = json_ob["tokenId"]
+        del json_ob["tokenId"]
+        json_ob["image"] = ipfs_url+"/"+str(id)+"."+extension
+        jsons.append(json_ob)
+        private_ob_file(dest+"/"+csv_folder+"/metadata/"+str(id)+".json",json_ob)
+    private_ob_file(dest+"/"+csv_folder+"/metadata/metadata.json",jsons)
 
 
 def parent_validation():
@@ -268,20 +279,21 @@ def private_create_folder_if_not(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-print("Script Started!")
-parent_validation()
-print("Coping to Destination")
-copy()
-print("Copy Validation Started")
-is_all_good()
-print("Randomization Started")
-randomize()
-print("Validation Started After Randomization")
-is_all_good()
-print("Creating CSV from Collection")
-create_csv()
-print("CSV to Metadata Json") #do this after editing the original CSV
-csv_to_metadata(dest+"/"+csv_folder+"/final_metadata_no_space.csv")
-print("Metadata Created")
-print("Now zipping collection for upload")
-make_zip(500)
+# print("Script Started!")
+# parent_validation()
+# print("Coping to Destination")
+# copy()
+# print("Copy Validation Started")
+# is_all_good()
+# print("Randomization Started")
+# randomize()
+# print("Validation Started After Randomization")
+# is_all_good()
+# print("Creating CSV from Collection")
+# create_csv()
+# print("CSV to Metadata Json") #do this after editing the original CSV
+#csv_to_metadata(dest+"/"+csv_folder+"/final_metadata_no_space.csv")
+# print("Metadata Created")
+#print("Now zipping collection for upload")
+#make_zip(500)
+#updateNFTPath()
